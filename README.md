@@ -1,2 +1,200 @@
-# pr-refactoring-agent
-This agent lets reviewers trigger guided refactoring and code-health workflows from a pull request comment.
+# CodeScene PR Refactoring Agent
+
+A GitHub Action that brings automated code refactoring and code health improvements to your pull requests. Uses AI-powered analysis to guide refactoring based on CodeScene's code health metrics.
+
+## Features
+
+- 🔍 **Automatic code health analysis** - Identifies technical debt and code smells
+- 🤖 **AI-guided refactoring** - Uses state-of-the-art LLMs to suggest and apply improvements
+- 📊 **CodeScene integration** - Leverages CodeScene's battle-tested code health metrics
+- 🔄 **PR-driven workflow** - Trigger refactorings directly from pull request comments
+- 🎯 **Skill-based execution** - Pre-built refactoring skills for common scenarios
+
+## Quick Start
+
+### Basic Usage
+
+Add this workflow to your repository at `.github/workflows/refactoring-agent.yml`:
+
+```yaml
+name: PR Refactoring Agent
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  refactor:
+    # Only run on PR comments that start with /refactor
+    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/refactor')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          
+      - uses: codescene-oss/pr-refactoring-agent@v1
+        with:
+          command: 'skill:fix-code-health-degradations'
+          codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+Then comment `/refactor` on any pull request to trigger the agent.
+
+## Available Skills
+
+The agent includes several pre-built refactoring skills:
+
+- `skill:fix-code-health-degradations` - Fix code health issues identified in the PR
+- `skill:guiding-refactoring-with-code-health` - Guided refactoring focused on specific files
+- `skill:improve-pr-code-health` - Improve overall code health of the PR
+- `skill:detect-and-fix-code-smells` - Find and fix common code smells
+
+## Inputs
+
+| Input | Description | Required | Default |
+|-------|-------------|----------|---------|
+| `command` | The refactoring command to execute | Yes | - |
+| `model` | AI model to use | No | `anthropic/claude-sonnet-4-20250514` |
+| `version` | Version of the agent to use | No | `latest` |
+| `create_branch` | Create a new branch before refactoring | No | - |
+| `push` | Push changes to remote after refactoring | No | `false` |
+| `remote` | Git remote name | No | `origin` |
+| `github_token` | GitHub token for authentication | No | `${{ github.token }}` |
+| `codescene_token` | CodeScene API access token | Yes | - |
+| `anthropic_api_key` | Anthropic API key | No | - |
+| `openai_api_key` | OpenAI API key | No | - |
+| `google_api_key` | Google API key | No | - |
+| `opencode_auth_json` | OpenCode auth JSON | No | - |
+
+## Supported Models
+
+The agent supports multiple AI providers:
+
+- **Anthropic**: `anthropic/claude-sonnet-4-20250514`, `anthropic/claude-opus-4-20250514`
+- **OpenAI**: `openai/gpt-4`, `openai/gpt-4-turbo`
+- **Google**: `google/gemini-pro`
+- **GitHub Copilot**: `github-copilot/gpt-4.1` (requires `opencode_auth_json`)
+
+## Example Workflows
+
+### Trigger on PR Comment
+
+```yaml
+name: PR Refactoring
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  refactor:
+    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/refactor')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Get PR branch
+        uses: actions/github-script@v7
+        id: pr
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            core.setOutput('ref', pr.data.head.ref);
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.ref }}
+          
+      - uses: codescene-oss/pr-refactoring-agent@v1
+        with:
+          command: 'skill:fix-code-health-degradations'
+          push: true
+          codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+### Automatic Refactoring on Push
+
+```yaml
+name: Auto Refactor
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          
+      - uses: codescene-oss/pr-refactoring-agent@v1
+        with:
+          command: 'skill:improve-pr-code-health'
+          push: true
+          model: 'anthropic/claude-sonnet-4-20250514'
+          codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+### Custom Model and Branch
+
+```yaml
+- uses: codescene-oss/pr-refactoring-agent@v1
+  with:
+    command: 'skill:guiding-refactoring-with-code-health improve src/complex-file.js'
+    model: 'openai/gpt-4-turbo'
+    create_branch: 'refactor/complex-file'
+    push: true
+    codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
+    openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+```
+
+## Required Secrets
+
+Add these secrets to your repository (Settings → Secrets and variables → Actions):
+
+### Required
+- `CODESCENE_ACCESS_TOKEN` - Get from [CodeScene](https://codescene.com)
+
+### At least one AI provider
+- `ANTHROPIC_API_KEY` - Get from [Anthropic](https://console.anthropic.com)
+- `OPENAI_API_KEY` - Get from [OpenAI](https://platform.openai.com)
+- `GOOGLE_API_KEY` - Get from [Google AI Studio](https://aistudio.google.com)
+
+## Platform Support
+
+The action supports:
+- Linux (amd64, aarch64)
+- macOS (amd64, aarch64/Apple Silicon)
+- Windows (amd64)
+
+## How It Works
+
+1. **Download**: The action downloads the appropriate pre-built binary for your platform
+2. **Analyze**: CodeScene analyzes your code for health issues and technical debt
+3. **Refactor**: The AI model generates and applies improvements based on CodeScene's guidance
+4. **Commit**: Changes are automatically committed (and optionally pushed) to your branch
+
+## License
+
+MIT
+
+## Support
+
+- [GitHub Issues](https://github.com/codescene-oss/pr-refactoring-agent/issues)
+- [Documentation](https://codescene.com/docs)

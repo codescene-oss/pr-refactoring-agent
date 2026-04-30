@@ -1,0 +1,179 @@
+name: 'CodeScene PR Refactoring Agent'
+description: 'Automated code refactoring and code health improvements for pull requests'
+branding:
+  icon: 'code'
+  color: 'orange'
+
+inputs:
+  command:
+    description: 'The refactoring command to execute (e.g., "skill:fix-code-health-degradations")'
+    required: true
+  model:
+    description: 'AI model to use (e.g., "anthropic/claude-sonnet-4-20250514")'
+    required: false
+    default: 'anthropic/claude-sonnet-4-20250514'
+  version:
+    description: 'Version of refactoring-agent to use (defaults to latest)'
+    required: false
+    default: 'latest'
+  create_branch:
+    description: 'Create and switch to a new branch before running'
+    required: false
+  push:
+    description: 'Push changes to remote after successful refactoring'
+    required: false
+    default: 'false'
+  remote:
+    description: 'Git remote name to push to'
+    required: false
+    default: 'origin'
+  github_token:
+    description: 'GitHub token for authentication'
+    required: false
+    default: ${{ github.token }}
+  codescene_token:
+    description: 'CodeScene API access token'
+    required: true
+  anthropic_api_key:
+    description: 'Anthropic API key (required for anthropic/* models)'
+    required: false
+  openai_api_key:
+    description: 'OpenAI API key (required for openai/* models)'
+    required: false
+  google_api_key:
+    description: 'Google API key (required for google/* models)'
+    required: false
+  opencode_auth_json:
+    description: 'OpenCode auth JSON (required for github-copilot/* models)'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Determine platform
+      id: platform
+      shell: bash
+      run: |
+        OS="$(uname -s)"
+        ARCH="$(uname -m)"
+
+        case "$OS" in
+          Linux)
+            case "$ARCH" in
+              x86_64|amd64)
+                echo "binary_name=refactoring-agent-linux-amd64" >> "$GITHUB_OUTPUT"
+                ;;
+              aarch64|arm64)
+                echo "binary_name=refactoring-agent-linux-aarch64" >> "$GITHUB_OUTPUT"
+                ;;
+              *)
+                echo "::error::Unsupported Linux architecture: $ARCH"
+                exit 1
+                ;;
+            esac
+            ;;
+          Darwin)
+            case "$ARCH" in
+              x86_64|amd64)
+                echo "binary_name=refactoring-agent-macos-amd64" >> "$GITHUB_OUTPUT"
+                ;;
+              arm64|aarch64)
+                echo "binary_name=refactoring-agent-macos-aarch64" >> "$GITHUB_OUTPUT"
+                ;;
+              *)
+                echo "::error::Unsupported macOS architecture: $ARCH"
+                exit 1
+                ;;
+            esac
+            ;;
+          MINGW*|MSYS*|CYGWIN*)
+            echo "binary_name=refactoring-agent-windows-amd64" >> "$GITHUB_OUTPUT"
+            ;;
+          *)
+            echo "::error::Unsupported operating system: $OS"
+            exit 1
+            ;;
+        esac
+
+    - name: Download refactoring-agent binary
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        BINARY_NAME: ${{ steps.platform.outputs.binary_name }}
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        set -euo pipefail
+
+        REPO="codescene-oss/refactoring-agent-releases"
+
+        if [ "$VERSION" = "latest" ]; then
+          DOWNLOAD_URL="https://github.com/${REPO}/releases/latest/download/${BINARY_NAME}.zip"
+        else
+          DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${BINARY_NAME}.zip"
+        fi
+
+        echo "Downloading ${BINARY_NAME}.zip from ${DOWNLOAD_URL}"
+
+        mkdir -p "${RUNNER_TEMP}/refactoring-agent"
+        cd "${RUNNER_TEMP}/refactoring-agent"
+
+        if ! curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -o "${BINARY_NAME}.zip" "$DOWNLOAD_URL"; then
+          echo "::error::Failed to download binary from $DOWNLOAD_URL"
+          exit 1
+        fi
+
+        unzip -q "${BINARY_NAME}.zip"
+
+        # Handle different archive contents based on platform
+        if [ -f "refactoring-agent" ]; then
+          chmod +x refactoring-agent
+        elif [ -f "refactoring-agent.exe" ]; then
+          chmod +x refactoring-agent.exe || true
+        elif [ -f "$BINARY_NAME" ]; then
+          mv "$BINARY_NAME" refactoring-agent
+          chmod +x refactoring-agent
+        elif [ -f "${BINARY_NAME}.exe" ]; then
+          mv "${BINARY_NAME}.exe" refactoring-agent.exe
+          chmod +x refactoring-agent.exe || true
+        else
+          echo "::error::Could not find binary in archive"
+          ls -la
+          exit 1
+        fi
+
+        echo "${RUNNER_TEMP}/refactoring-agent" >> "$GITHUB_PATH"
+
+    - name: Run refactoring agent
+      shell: bash
+      env:
+        COMMAND: ${{ inputs.command }}
+        MODEL: ${{ inputs.model }}
+        CREATE_BRANCH: ${{ inputs.create_branch }}
+        PUSH: ${{ inputs.push }}
+        REMOTE: ${{ inputs.remote }}
+        CS_ACCESS_TOKEN: ${{ inputs.codescene_token }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
+        OPENAI_API_KEY: ${{ inputs.openai_api_key }}
+        GOOGLE_API_KEY: ${{ inputs.google_api_key }}
+        OPENCODE_AUTH_JSON: ${{ inputs.opencode_auth_json }}
+      run: |
+        set -euo pipefail
+
+        if [ -f "${RUNNER_TEMP}/refactoring-agent/refactoring-agent.exe" ]; then
+          BINARY="${RUNNER_TEMP}/refactoring-agent/refactoring-agent.exe"
+        else
+          BINARY="${RUNNER_TEMP}/refactoring-agent/refactoring-agent"
+        fi
+
+        ARGS=("run" "$COMMAND" "--model" "$MODEL")
+
+        if [ -n "$CREATE_BRANCH" ]; then
+          ARGS+=("--create-branch" "$CREATE_BRANCH")
+        fi
+
+        if [ "$PUSH" = "true" ]; then
+          ARGS+=("--push" "--remote" "$REMOTE")
+        fi
+
+        echo "Running: $BINARY ${ARGS[*]}"
+        "$BINARY" "${ARGS[@]}"

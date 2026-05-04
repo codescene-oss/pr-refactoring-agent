@@ -27,10 +27,9 @@ inputs:
     description: 'Git remote name to push to'
     required: false
     default: 'origin'
-  github_token:
-    description: 'GitHub token for authentication'
+  release_token:
+    description: 'GitHub token for downloading releases (required only if refactoring-agent-releases repo is private)'
     required: false
-    default: ${{ github.token }}
   codescene_token:
     description: 'CodeScene API access token'
     required: true
@@ -100,26 +99,72 @@ runs:
       env:
         VERSION: ${{ inputs.version }}
         BINARY_NAME: ${{ steps.platform.outputs.binary_name }}
-        GH_TOKEN: ${{ inputs.github_token }}
+        GH_TOKEN: ${{ inputs.release_token }}
       run: |
         set -euo pipefail
 
         REPO="codescene-oss/refactoring-agent-releases"
-
-        if [ "$VERSION" = "latest" ]; then
-          DOWNLOAD_URL="https://github.com/${REPO}/releases/latest/download/${BINARY_NAME}.zip"
-        else
-          DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${BINARY_NAME}.zip"
-        fi
-
-        echo "Downloading ${BINARY_NAME}.zip from ${DOWNLOAD_URL}"
+        ASSET_NAME="${BINARY_NAME}.zip"
 
         mkdir -p "${RUNNER_TEMP}/refactoring-agent"
         cd "${RUNNER_TEMP}/refactoring-agent"
 
-        if ! curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -o "${BINARY_NAME}.zip" "$DOWNLOAD_URL"; then
-          echo "::error::Failed to download binary from $DOWNLOAD_URL"
-          exit 1
+        # TODO: Remove the API method branch below when refactoring-agent-releases becomes public
+        if [ -n "${GH_TOKEN}" ]; then
+          # Token provided - use API method (for private repos)
+          echo "Using API method to download binary..."
+
+          # Get the release
+          if [ "$VERSION" = "latest" ]; then
+            RELEASE_DATA=$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" \
+              "https://api.github.com/repos/${REPO}/releases/latest")
+          else
+            RELEASE_DATA=$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" \
+              "https://api.github.com/repos/${REPO}/releases/tags/${VERSION}")
+          fi
+
+          RELEASE_TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
+          echo "Release tag: $RELEASE_TAG"
+
+          # Find the asset ID
+          ASSET_ID=$(echo "$RELEASE_DATA" | jq -r ".assets[] | select(.name == \"${ASSET_NAME}\") | .id")
+
+          if [ -z "$ASSET_ID" ] || [ "$ASSET_ID" = "null" ]; then
+            echo "::error::Could not find ${ASSET_NAME} in release ${RELEASE_TAG}"
+            echo "Available assets:"
+            echo "$RELEASE_DATA" | jq -r '.assets[].name'
+            exit 1
+          fi
+
+          echo "Downloading ${ASSET_NAME} (asset ID: ${ASSET_ID})..."
+
+          # Download via API
+          if ! curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/octet-stream" \
+            -o "${BINARY_NAME}.zip" \
+            "https://api.github.com/repos/${REPO}/releases/assets/${ASSET_ID}"; then
+            echo "::error::Failed to download binary"
+            exit 1
+          fi
+
+          echo "✅ Successfully downloaded ${ASSET_NAME}"
+        else
+          # No token - use direct download (public repos only)
+          if [ "$VERSION" = "latest" ]; then
+            DOWNLOAD_URL="https://github.com/${REPO}/releases/latest/download/${ASSET_NAME}"
+          else
+            DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${ASSET_NAME}"
+          fi
+
+          echo "Using direct download from ${DOWNLOAD_URL}..."
+
+          if ! curl -fsSL -o "${BINARY_NAME}.zip" "$DOWNLOAD_URL"; then
+            echo "::error::Failed to download binary from ${DOWNLOAD_URL}"
+            echo "If the releases repo is private, you must provide a release_token"
+            exit 1
+          fi
+
+          echo "✅ Successfully downloaded ${ASSET_NAME}"
         fi
 
         unzip -q "${BINARY_NAME}.zip"

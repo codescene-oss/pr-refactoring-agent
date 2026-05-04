@@ -42,6 +42,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run refactoring agent
+        id: refactor
         uses: codescene-oss/pr-refactoring-agent
         with:
           command: 'skill:fix-code-health-degradations'
@@ -55,7 +56,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const outcome = '${{ job.status }}';
+            const outcome = '${{ steps.refactor.outcome }}';
             const body = outcome === 'success'
               ? '✅ Refactoring completed successfully! Changes have been pushed to this branch.'
               : '❌ Refactoring failed. Check the workflow logs for details.';

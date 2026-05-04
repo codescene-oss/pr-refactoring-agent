@@ -194,7 +194,36 @@ runs:
           exit 1
         fi
 
+        # Make embedded binaries executable and accessible
+        for embedded in opencode-embedded cs-mcp-embedded opencode-embedded.exe cs-mcp-embedded.exe; do
+          if [ -f "$embedded" ]; then
+            chmod +x "$embedded" 2>/dev/null || true
+            # Also create without -embedded suffix
+            base="${embedded%-embedded*}"
+            ext="${embedded##*.}"
+            if [ "$ext" = "exe" ]; then
+              base="${base}.exe"
+            fi
+            cp "$embedded" "$base" 2>/dev/null || true
+            chmod +x "$base" 2>/dev/null || true
+          fi
+        done
+
         echo "${RUNNER_TEMP}/refactoring-agent" >> "$GITHUB_PATH"
+
+        # Set environment variable to help binary find opencode/cs-mcp on PATH
+        export PATH="${RUNNER_TEMP}/refactoring-agent:$PATH"
+
+    - name: Setup OpenCode auth
+      shell: bash
+      env:
+        OPENCODE_AUTH_JSON: ${{ inputs.opencode_auth_json }}
+      run: |
+        if [ -n "${OPENCODE_AUTH_JSON}" ]; then
+          mkdir -p "${HOME}/.local/share/opencode"
+          printf "%s" "${OPENCODE_AUTH_JSON}" > "${HOME}/.local/share/opencode/auth.json"
+          echo "✅ OpenCode auth configured"
+        fi
 
     - name: Run refactoring agent
       shell: bash
@@ -209,7 +238,6 @@ runs:
         ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
         GOOGLE_API_KEY: ${{ inputs.google_api_key }}
-        OPENCODE_AUTH_JSON: ${{ inputs.opencode_auth_json }}
       run: |
         set -euo pipefail
 

@@ -31,19 +31,26 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          
       - uses: codescene-oss/pr-refactoring-agent@v1
         with:
+          pr_number: ${{ github.event.issue.number }}
           command: 'skill:fix-code-health-degradations'
+          push: true
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
 Then comment `/refactor` on any pull request to trigger the agent.
+
+The action automatically:
+- Fetches PR metadata
+- Checks out the PR branch
+- Configures git
+- Runs the refactoring
+- Pushes changes (if `push: true`)
+- Posts a comment with the result
 
 ## Available Skills
 
@@ -98,25 +105,11 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      issues: write
     steps:
-      - name: Get PR branch
-        uses: actions/github-script@v7
-        id: pr
-        with:
-          script: |
-            const pr = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-            });
-            core.setOutput('ref', pr.data.head.ref);
-
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.pr.outputs.ref }}
-          
       - uses: codescene-oss/pr-refactoring-agent@v1
         with:
+          pr_number: ${{ github.event.issue.number }}
           command: 'skill:fix-code-health-degradations'
           push: true
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
@@ -137,13 +130,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
+      issues: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          
       - uses: codescene-oss/pr-refactoring-agent@v1
         with:
+          pr_number: ${{ github.event.pull_request.number }}
           command: 'skill:improve-pr-code-health'
           push: true
           model: 'anthropic/claude-sonnet-4-20250514'
@@ -151,18 +143,25 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-### Custom Model and Branch
+### Custom Model and Branch (Non-PR Context)
+
+For standalone refactoring (not triggered from a PR), checkout manually first:
 
 ```yaml
-- uses: codescene-oss/pr-refactoring-agent@v1
-  with:
-    command: 'skill:guiding-refactoring-with-code-health improve src/complex-file.js'
-    model: 'openai/gpt-4-turbo'
-    create_branch: 'refactor/complex-file'
-    push: true
-    codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
-    openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+steps:
+  - uses: actions/checkout@v5
+  
+  - uses: codescene-oss/pr-refactoring-agent@v1
+    with:
+      command: 'skill:guiding-refactoring-with-code-health improve src/complex-file.js'
+      model: 'openai/gpt-4-turbo'
+      create_branch: 'refactor/complex-file'
+      push: true
+      codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
+      openai_api_key: ${{ secrets.OPENAI_API_KEY }}
 ```
+
+Note: When `pr_number` is not provided, the action assumes code is already checked out and skips PR-specific steps.
 
 ## Required Secrets
 

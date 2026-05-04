@@ -5,6 +5,9 @@ branding:
   color: 'orange'
 
 inputs:
+  pr_number:
+    description: 'Pull request number (if running in PR context)'
+    required: false
   command:
     description: 'The refactoring command to execute (e.g., "skill:fix-code-health-degradations")'
     required: true
@@ -27,6 +30,10 @@ inputs:
     description: 'Git remote name to push to'
     required: false
     default: 'origin'
+  github_token:
+    description: 'GitHub token for API access and checkout'
+    required: false
+    default: ${{ github.token }}
   release_token:
     description: 'GitHub token for downloading releases (required only if refactoring-agent-releases repo is private)'
     required: false
@@ -49,6 +56,43 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Get PR metadata
+      if: inputs.pr_number != ''
+      id: pr
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          const prNumber = parseInt('${{ inputs.pr_number }}');
+          const { data: pr } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: prNumber,
+          });
+
+          core.setOutput('head_ref', pr.head.ref);
+          core.setOutput('head_repo', pr.head.repo.full_name);
+          core.setOutput('same_repo', String(pr.head.repo.full_name === `${context.repo.owner}/${context.repo.repo}`));
+
+    - name: Checkout PR branch
+      if: inputs.pr_number != ''
+      uses: actions/checkout@v5
+      with:
+        repository: ${{ steps.pr.outputs.head_repo }}
+        ref: ${{ steps.pr.outputs.head_ref }}
+        token: ${{ inputs.github_token }}
+        fetch-depth: 0
+
+    - name: Configure git
+      if: inputs.pr_number != ''
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git checkout ${{ steps.pr.outputs.head_ref }}
+        echo "Current branch: $(git branch --show-current)"
+        echo "Current commit: $(git rev-parse HEAD)"
+
     - name: Determine platform
       id: platform
       shell: bash
@@ -226,6 +270,7 @@ runs:
         fi
 
     - name: Run refactoring agent
+      id: refactor
       shell: bash
       env:
         COMMAND: ${{ inputs.command }}
@@ -259,3 +304,21 @@ runs:
 
         echo "Running: $BINARY ${ARGS[*]}"
         "$BINARY" "${ARGS[@]}"
+
+    - name: Comment on PR
+      if: always() && inputs.pr_number != ''
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          const outcome = '${{ steps.refactor.outcome }}';
+          const body = outcome === 'success'
+            ? '✅ Refactoring completed successfully! Changes have been pushed to this branch.'
+            : '❌ Refactoring failed. Check the workflow logs for details.';
+
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: parseInt('${{ inputs.pr_number }}'),
+            body: body
+          });

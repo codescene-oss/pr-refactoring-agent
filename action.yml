@@ -186,6 +186,14 @@ runs:
           exit 1
         fi
 
+        # Verify skills directory is present
+        if [ ! -d "skills" ]; then
+          echo "::error::Skills directory not found in release archive"
+          echo "Archive contents:"
+          ls -la
+          exit 1
+        fi
+
         echo "${RUNNER_TEMP}/refactoring-agent" >> "$GITHUB_PATH"
 
     - name: Run refactoring agent
@@ -196,6 +204,7 @@ runs:
         CREATE_BRANCH: ${{ inputs.create_branch }}
         PUSH: ${{ inputs.push }}
         REMOTE: ${{ inputs.remote }}
+        REFAGENT_SKILLS_DIR: ${{ runner.temp }}/refactoring-agent/skills
         CS_ACCESS_TOKEN: ${{ inputs.codescene_token }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}

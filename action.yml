@@ -268,7 +268,7 @@ runs:
           BINARY="${RUNNER_TEMP}/refactoring-agent/refactoring-agent"
         fi
 
-        # Prepend pr-comment skill if running in PR context
+        # Prepend github-pr-comment skill if running in PR context
         if [ -n "${PR_NUMBER}" ]; then
           # Strip any command prefix starting with / (e.g., /cs-agent, /refactor, etc.)
           echo "COMMAND: ${COMMAND}"
@@ -277,7 +277,7 @@ runs:
           echo "GITHUB_REPOSITORY: ${GITHUB_REPOSITORY}"
           echo "GITHUB_TOKEN: ${GITHUB_TOKEN:0:10}..." # Show first 10 chars only
           echo "PR_NUMBER: ${PR_NUMBER}"
-          FULL_COMMAND="skill:pr-comment ${STRIPPED_COMMAND}"
+          FULL_COMMAND="skill:github-pr-comment ${STRIPPED_COMMAND}"
         else
           FULL_COMMAND="${COMMAND}"
         fi

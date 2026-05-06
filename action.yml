@@ -1,0 +1,296 @@
+name: 'CodeScene PR Refactoring Agent'
+description: 'Automated code refactoring and code health improvements for pull requests'
+branding:
+  icon: 'code'
+  color: 'orange'
+
+inputs:
+  pr_number:
+    description: 'Pull request number (if running in PR context)'
+    required: false
+  command:
+    description: 'The refactoring command to execute (e.g., "skill:fix-code-health-degradations")'
+    required: true
+  model:
+    description: 'AI model to use (e.g., "anthropic/claude-sonnet-4-20250514")'
+    required: false
+    default: 'anthropic/claude-sonnet-4-20250514'
+  version:
+    description: 'Version of refactoring-agent to use (defaults to latest)'
+    required: false
+    default: 'latest'
+  create_branch:
+    description: 'Create and switch to a new branch before running'
+    required: false
+  push:
+    description: 'Push changes to remote after successful refactoring'
+    required: false
+    default: 'false'
+  remote:
+    description: 'Git remote name to push to'
+    required: false
+    default: 'origin'
+  github_token:
+    description: 'GitHub token for API access and checkout'
+    required: false
+    default: ${{ github.token }}
+  release_token:
+    description: 'GitHub token for downloading releases (required only if refactoring-agent-releases repo is private)'
+    required: false
+  codescene_token:
+    description: 'CodeScene API access token'
+    required: true
+  anthropic_api_key:
+    description: 'Anthropic API key (required for anthropic/* models)'
+    required: false
+  openai_api_key:
+    description: 'OpenAI API key (required for openai/* models)'
+    required: false
+  google_api_key:
+    description: 'Google API key (required for google/* models)'
+    required: false
+  opencode_auth_json:
+    description: 'OpenCode auth JSON (required for github-copilot/* models)'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Get PR metadata
+      if: inputs.pr_number != ''
+      id: pr
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          const prNumber = parseInt('${{ inputs.pr_number }}');
+          const { data: pr } = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: prNumber,
+          });
+
+          core.setOutput('head_ref', pr.head.ref);
+          core.setOutput('head_repo', pr.head.repo.full_name);
+          core.setOutput('same_repo', String(pr.head.repo.full_name === `${context.repo.owner}/${context.repo.repo}`));
+
+    - name: Checkout PR branch
+      if: inputs.pr_number != ''
+      uses: actions/checkout@v5
+      with:
+        repository: ${{ steps.pr.outputs.head_repo }}
+        ref: ${{ steps.pr.outputs.head_ref }}
+        token: ${{ inputs.github_token }}
+        fetch-depth: 0
+
+    - name: Configure git
+      if: inputs.pr_number != ''
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git checkout ${{ steps.pr.outputs.head_ref }}
+        echo "Current branch: $(git branch --show-current)"
+        echo "Current commit: $(git rev-parse HEAD)"
+
+    - name: Determine platform
+      id: platform
+      shell: bash
+      run: |
+        OS="$(uname -s)"
+        ARCH="$(uname -m)"
+
+        case "$OS" in
+          Linux)
+            case "$ARCH" in
+              x86_64|amd64)
+                echo "binary_name=refactoring-agent-linux-amd64" >> "$GITHUB_OUTPUT"
+                ;;
+              aarch64|arm64)
+                echo "binary_name=refactoring-agent-linux-aarch64" >> "$GITHUB_OUTPUT"
+                ;;
+              *)
+                echo "::error::Unsupported Linux architecture: $ARCH"
+                exit 1
+                ;;
+            esac
+            ;;
+          Darwin)
+            case "$ARCH" in
+              x86_64|amd64)
+                echo "binary_name=refactoring-agent-macos-amd64" >> "$GITHUB_OUTPUT"
+                ;;
+              arm64|aarch64)
+                echo "binary_name=refactoring-agent-macos-aarch64" >> "$GITHUB_OUTPUT"
+                ;;
+              *)
+                echo "::error::Unsupported macOS architecture: $ARCH"
+                exit 1
+                ;;
+            esac
+            ;;
+          MINGW*|MSYS*|CYGWIN*)
+            echo "binary_name=refactoring-agent-windows-amd64" >> "$GITHUB_OUTPUT"
+            ;;
+          *)
+            echo "::error::Unsupported operating system: $OS"
+            exit 1
+            ;;
+        esac
+
+    - name: Download refactoring-agent binary
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        BINARY_NAME: ${{ steps.platform.outputs.binary_name }}
+        GH_TOKEN: ${{ inputs.release_token }}
+      run: |
+        set -euo pipefail
+
+        REPO="codescene-oss/refactoring-agent-releases"
+        ASSET_NAME="${BINARY_NAME}.zip"
+
+        mkdir -p "${RUNNER_TEMP}/refactoring-agent"
+        cd "${RUNNER_TEMP}/refactoring-agent"
+
+        # TODO: Remove the API method branch below when refactoring-agent-releases becomes public
+        if [ -n "${GH_TOKEN}" ]; then
+          # Token provided - use API method (for private repos)
+          echo "Using API method to download binary..."
+
+          # Get the release
+          if [ "$VERSION" = "latest" ]; then
+            RELEASE_DATA=$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" \
+              "https://api.github.com/repos/${REPO}/releases/latest")
+          else
+            RELEASE_DATA=$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" \
+              "https://api.github.com/repos/${REPO}/releases/tags/${VERSION}")
+          fi
+
+          RELEASE_TAG=$(echo "$RELEASE_DATA" | jq -r '.tag_name')
+          echo "Release tag: $RELEASE_TAG"
+
+          # Find the asset ID
+          ASSET_ID=$(echo "$RELEASE_DATA" | jq -r ".assets[] | select(.name == \"${ASSET_NAME}\") | .id")
+
+          if [ -z "$ASSET_ID" ] || [ "$ASSET_ID" = "null" ]; then
+            echo "::error::Could not find ${ASSET_NAME} in release ${RELEASE_TAG}"
+            echo "Available assets:"
+            echo "$RELEASE_DATA" | jq -r '.assets[].name'
+            exit 1
+          fi
+
+          echo "Downloading ${ASSET_NAME} (asset ID: ${ASSET_ID})..."
+
+          # Download via API
+          if ! curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/octet-stream" \
+            -o "${BINARY_NAME}.zip" \
+            "https://api.github.com/repos/${REPO}/releases/assets/${ASSET_ID}"; then
+            echo "::error::Failed to download binary"
+            exit 1
+          fi
+
+          echo "✅ Successfully downloaded ${ASSET_NAME}"
+        else
+          # No token - use direct download (public repos only)
+          if [ "$VERSION" = "latest" ]; then
+            DOWNLOAD_URL="https://github.com/${REPO}/releases/latest/download/${ASSET_NAME}"
+          else
+            DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${ASSET_NAME}"
+          fi
+
+          echo "Using direct download from ${DOWNLOAD_URL}..."
+
+          if ! curl -fsSL -o "${BINARY_NAME}.zip" "$DOWNLOAD_URL"; then
+            echo "::error::Failed to download binary from ${DOWNLOAD_URL}"
+            echo "If the releases repo is private, you must provide a release_token"
+            exit 1
+          fi
+
+          echo "✅ Successfully downloaded ${ASSET_NAME}"
+        fi
+
+        unzip -q "${BINARY_NAME}.zip"
+
+        # Handle different archive contents based on platform
+        if [ -f "refactoring-agent" ]; then
+          chmod +x refactoring-agent
+        elif [ -f "refactoring-agent.exe" ]; then
+          chmod +x refactoring-agent.exe || true
+        elif [ -f "$BINARY_NAME" ]; then
+          mv "$BINARY_NAME" refactoring-agent
+          chmod +x refactoring-agent
+        elif [ -f "${BINARY_NAME}.exe" ]; then
+          mv "${BINARY_NAME}.exe" refactoring-agent.exe
+          chmod +x refactoring-agent.exe || true
+        else
+          echo "::error::Could not find binary in archive"
+          ls -la
+          exit 1
+        fi
+
+        echo "${RUNNER_TEMP}/refactoring-agent" >> "$GITHUB_PATH"
+
+    - name: Setup OpenCode auth
+      shell: bash
+      env:
+        OPENCODE_AUTH_JSON: ${{ inputs.opencode_auth_json }}
+      run: |
+        if [ -n "${OPENCODE_AUTH_JSON}" ]; then
+          mkdir -p "${HOME}/.local/share/opencode"
+          printf "%s" "${OPENCODE_AUTH_JSON}" > "${HOME}/.local/share/opencode/auth.json"
+          echo "✅ OpenCode auth configured"
+        fi
+
+    - name: Run refactoring agent
+      id: refactor
+      shell: bash
+      env:
+        COMMAND: ${{ inputs.command }}
+        PR_NUMBER: ${{ inputs.pr_number }}
+        MODEL: ${{ inputs.model }}
+        CREATE_BRANCH: ${{ inputs.create_branch }}
+        PUSH: ${{ inputs.push }}
+        REMOTE: ${{ inputs.remote }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        CS_ACCESS_TOKEN: ${{ inputs.codescene_token }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
+        OPENAI_API_KEY: ${{ inputs.openai_api_key }}
+        GOOGLE_API_KEY: ${{ inputs.google_api_key }}
+      run: |
+        set -euo pipefail
+
+        if [ -f "${RUNNER_TEMP}/refactoring-agent/refactoring-agent.exe" ]; then
+          BINARY="${RUNNER_TEMP}/refactoring-agent/refactoring-agent.exe"
+        else
+          BINARY="${RUNNER_TEMP}/refactoring-agent/refactoring-agent"
+        fi
+
+        # Prepend github-pr-comment skill if running in PR context
+        if [ -n "${PR_NUMBER}" ]; then
+          # Strip any command prefix starting with / (e.g., /cs-agent, /refactor, etc.)
+          echo "COMMAND: ${COMMAND}"
+          STRIPPED_COMMAND=$(echo "$COMMAND" | sed 's|^/[^ ]\+ \+||')
+          echo "STRIPPED_COMMAND: ${STRIPPED_COMMAND}"
+          echo "GITHUB_REPOSITORY: ${GITHUB_REPOSITORY}"
+          echo "GITHUB_TOKEN: ${GITHUB_TOKEN:0:10}..." # Show first 10 chars only
+          echo "PR_NUMBER: ${PR_NUMBER}"
+          FULL_COMMAND="skill:github-pr-comment ${STRIPPED_COMMAND}"
+        else
+          FULL_COMMAND="${COMMAND}"
+        fi
+
+        ARGS=("run" "$FULL_COMMAND" "--model" "$MODEL")
+
+        if [ -n "$CREATE_BRANCH" ]; then
+          ARGS+=("--create-branch" "$CREATE_BRANCH")
+        fi
+
+        if [ "$PUSH" = "true" ]; then
+          ARGS+=("--push" "--remote" "$REMOTE")
+        fi
+
+        echo "Running: $BINARY ${ARGS[*]}"
+        "$BINARY" "${ARGS[@]}"

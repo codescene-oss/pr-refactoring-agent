@@ -1,0 +1,22 @@
+gitlab/README.md
+  s_d0e2a65fada82c::t_aba8890acfc0f2 23
+  s_d0e2a65fada82c::t_e419468fdf8368 38-44
+gitlab/refactoring-agent.yml
+  s_d0e2a65fada82c::t_a42e5cb5841608 40-77,79-93,95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "2e289f873bf0ca2c6ef34981a0c2ba5d870f0b6d",
+  "prompts": {},
+  "sessions": {
+    "s_d0e2a65fada82c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "71cda868-0fc4-4964-835d-1b5924a3801f",
+        "model": "claude-sonnet-4-5-20250929"
+      },
+      "human_author": "Kalle Norrestam <kalle@norrestam.se>"
+    }
+  }
+}

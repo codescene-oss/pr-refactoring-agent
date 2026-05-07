@@ -20,6 +20,7 @@ In your GitLab project, go to **Settings → CI/CD → Variables** and add:
 | Variable | Description | Scope |
 |----------|-------------|-------|
 | `GITLAB_TOKEN` | Project access token with `api` and `write_repository` scopes | Required |
+| `GITHUB_RELEASES_TOKEN` | GitHub token for downloading releases (required for private repos) | Required |
 | `CS_ACCESS_TOKEN` | CodeScene API access token | Required |
 | `ANTHROPIC_API_KEY` | Anthropic API key | Required (one of) |
 | `OPENAI_API_KEY` | OpenAI API key | Required (one of) |
@@ -33,6 +34,13 @@ In your GitLab project, go to **Settings → CI/CD → Variables** and add:
    - Name: `refactoring-agent`
    - Role: `Developer` or `Maintainer`
    - Scopes: `api`, `write_repository`
+
+**To create a GitHub releases token:**
+1. Go to GitHub: **Settings → Developer settings → Personal access tokens → Tokens (classic)**
+2. Generate new token with:
+   - Note: `gitlab-ci-releases-access`
+   - Expiration: Set as needed
+   - Scopes: Check `repo` (or just `public_repo` if releases repo becomes public)
 
 ### 3. Include Template in `.gitlab-ci.yml`
 

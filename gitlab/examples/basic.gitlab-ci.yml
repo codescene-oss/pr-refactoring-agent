@@ -1,0 +1,18 @@
+# Basic GitLab CI configuration for Refactoring Agent
+# Copy this to your project's .gitlab-ci.yml
+
+include:
+  - remote: 'https://raw.githubusercontent.com/codescene-oss/pr-refactoring-agent/main/gitlab/refactoring-agent.yml'
+
+# Optional: Set default model
+variables:
+  MODEL: "anthropic/claude-sonnet-4-20250514"
+
+# Required CI/CD Variables (configure in Settings → CI/CD → Variables):
+# - GITLAB_TOKEN: Project access token with 'api' and 'write_repository' scopes
+# - CS_ACCESS_TOKEN: CodeScene API access token
+# - ANTHROPIC_API_KEY: Anthropic API key
+
+# Usage:
+# Comment on merge request with:
+#   /run-pipeline COMMAND="skill:fix-code-health-degradations improve complexity"

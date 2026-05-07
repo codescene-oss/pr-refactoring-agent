@@ -1,0 +1,57 @@
+# GitLab CI with multiple pre-configured manual jobs
+# This approach lets users click buttons instead of typing commands
+
+include:
+  - remote: 'https://raw.githubusercontent.com/codescene-oss/pr-refactoring-agent/main/gitlab/refactoring-agent.yml'
+
+variables:
+  MODEL: "anthropic/claude-sonnet-4-20250514"
+
+# Manual job: Fix complexity issues
+refactoring-agent:complexity:
+  extends: .refactoring-agent-base
+  when: manual
+  allow_failure: true
+  only:
+    - merge_requests
+  variables:
+    COMMAND: "skill:fix-code-health-degradations improve complexity"
+
+# Manual job: Fix security issues
+refactoring-agent:security:
+  extends: .refactoring-agent-base
+  when: manual
+  allow_failure: true
+  only:
+    - merge_requests
+  variables:
+    COMMAND: "skill:fix-code-health-degradations improve security"
+
+# Manual job: Improve readability
+refactoring-agent:readability:
+  extends: .refactoring-agent-base
+  when: manual
+  allow_failure: true
+  only:
+    - merge_requests
+  variables:
+    COMMAND: "skill:uplift-code-health improve readability"
+
+# Manual job: Combined refactoring
+refactoring-agent:full:
+  extends: .refactoring-agent-base
+  when: manual
+  allow_failure: true
+  only:
+    - merge_requests
+  variables:
+    COMMAND: "skill:fix-code-health-degradations skill:uplift-code-health improve all aspects"
+
+# Usage:
+# 1. Navigate to CI/CD → Pipelines in your merge request
+# 2. Click the play button next to the job you want to run
+# 3. Wait for completion
+# 4. Check the MR note for results
+
+# You can still use /run-pipeline for custom commands:
+#   /run-pipeline COMMAND="skill:fix-code-health-degradations custom goal here"

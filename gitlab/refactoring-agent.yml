@@ -1,0 +1,119 @@
+# GitLab CI Template for Refactoring Agent
+# Include in your .gitlab-ci.yml:
+#   include:
+#     - remote: 'https://raw.githubusercontent.com/codescene-oss/pr-refactoring-agent/main/gitlab/refactoring-agent.yml'
+#
+# Usage:
+#   Comment on MR: /run-pipeline COMMAND="skill:fix-code-health-degradations improve complexity"
+
+.refactoring-agent-base:
+  image: alpine:latest
+  before_script:
+    # Install dependencies
+    - apk add --no-cache curl unzip jq git bash
+
+    # Detect platform
+    - |
+      OS="$(uname -s)"
+      ARCH="$(uname -m)"
+
+      case "$OS-$ARCH" in
+        Linux-x86_64|Linux-amd64)
+          BINARY_NAME="refactoring-agent-linux-amd64"
+          ;;
+        Linux-aarch64|Linux-arm64)
+          BINARY_NAME="refactoring-agent-linux-aarch64"
+          ;;
+        *)
+          echo "Unsupported platform: $OS-$ARCH"
+          echo "Supported platforms: Linux x86_64, Linux aarch64"
+          exit 1
+          ;;
+      esac
+
+    # Download binary from GitHub Releases
+    - |
+      VERSION="${REFACTORING_AGENT_VERSION:-latest}"
+      REPO="codescene-oss/refactoring-agent-releases"
+      ASSET_NAME="${BINARY_NAME}.zip"
+
+      if [ "$VERSION" = "latest" ]; then
+        DOWNLOAD_URL="https://github.com/${REPO}/releases/latest/download/${ASSET_NAME}"
+      else
+        DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${VERSION}/${ASSET_NAME}"
+      fi
+
+      echo "Downloading ${DOWNLOAD_URL}..."
+      if ! curl -fsSL -o "${BINARY_NAME}.zip" "$DOWNLOAD_URL"; then
+        echo "Error: Failed to download binary from GitHub Releases"
+        echo "URL: ${DOWNLOAD_URL}"
+        exit 1
+      fi
+
+      unzip -q "${BINARY_NAME}.zip"
+      chmod +x "${BINARY_NAME}"
+      mv "${BINARY_NAME}" /usr/local/bin/refactoring-agent
+
+      echo "Binary installed successfully"
+      refactoring-agent --version || echo "Binary installed at /usr/local/bin/refactoring-agent"
+
+    # Configure git
+    - git config user.name "${GITLAB_USER_NAME:-gitlab-ci[bot]}"
+    - git config user.email "${GITLAB_USER_EMAIL:-gitlab-ci[bot]@noreply.gitlab.com}"
+
+  script:
+    # Validate COMMAND variable is set
+    - |
+      if [ -z "$COMMAND" ]; then
+        echo "Error: COMMAND variable not set"
+        echo ""
+        echo "Usage: Comment on MR with:"
+        echo "  /run-pipeline COMMAND=\"skill:fix-code-health-degradations improve complexity\""
+        echo ""
+        echo "Examples:"
+        echo "  /run-pipeline COMMAND=\"skill:fix-code-health-degradations improve complexity\""
+        echo "  /run-pipeline COMMAND=\"skill:uplift-code-health improve readability\""
+        echo "  /run-pipeline COMMAND=\"skill:fix-code-health-degradations skill:uplift-code-health improve all\""
+        exit 1
+      fi
+
+      echo "Command: ${COMMAND}"
+
+    # Prepend gitlab-mr-comment if in MR context
+    - |
+      if [ -n "${CI_MERGE_REQUEST_IID}" ]; then
+        export MR_IID="${CI_MERGE_REQUEST_IID}"
+        FULL_COMMAND="skill:gitlab-mr-comment ${COMMAND}"
+        echo "MR context detected, prepending gitlab-mr-comment skill"
+      else
+        FULL_COMMAND="${COMMAND}"
+        echo "No MR context, running without gitlab-mr-comment skill"
+      fi
+
+      echo "Full command: ${FULL_COMMAND}"
+
+    # Run refactoring agent
+    - |
+      echo "Running refactoring agent..."
+      refactoring-agent run "$FULL_COMMAND" \
+        --model "${MODEL:-anthropic/claude-sonnet-4-20250514}"
+
+    # Push changes if any exist
+    - |
+      if [ "$(git status --porcelain)" ]; then
+        echo "Changes detected, pushing to remote..."
+        git push origin HEAD:${CI_COMMIT_REF_NAME}
+        echo "Changes pushed successfully"
+      else
+        echo "No changes to push"
+      fi
+
+# Default job configuration (triggered by /run-pipeline)
+refactoring-agent:
+  extends: .refactoring-agent-base
+  rules:
+    # Only run when COMMAND variable is set (from /run-pipeline quick action)
+    # and pipeline source is 'web' (manual trigger)
+    - if: $COMMAND != null && $CI_PIPELINE_SOURCE == "web"
+  only:
+    - merge_requests

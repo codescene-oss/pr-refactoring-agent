@@ -57,6 +57,14 @@
       echo "Binary installed successfully"
       refactoring-agent --version || echo "Binary installed at /usr/local/bin/refactoring-agent"
 
+    # Configure OpenCode auth if provided
+    - |
+      if [ -n "${OPENCODE_AUTH_JSON}" ]; then
+        mkdir -p "${HOME}/.local/share/opencode"
+        printf "%s" "${OPENCODE_AUTH_JSON}" > "${HOME}/.local/share/opencode/auth.json"
+        echo "✅ OpenCode auth configured"
+      fi
+
     # Configure git
     - git config user.name "${GITLAB_USER_NAME:-gitlab-ci[bot]}"
     - git config user.email "${GITLAB_USER_EMAIL:-gitlab-ci[bot]@noreply.gitlab.com}"

@@ -21,7 +21,10 @@ In your GitLab project, go to **Settings → CI/CD → Variables** and add:
 |----------|-------------|-------|
 | `GITLAB_TOKEN` | Project access token with `api` and `write_repository` scopes | Required |
 | `CS_ACCESS_TOKEN` | CodeScene API access token | Required |
-| `ANTHROPIC_API_KEY` | Anthropic API key (or use `OPENAI_API_KEY`, etc.) | Required |
+| `ANTHROPIC_API_KEY` | Anthropic API key | Required (one of) |
+| `OPENAI_API_KEY` | OpenAI API key | Required (one of) |
+| `GOOGLE_API_KEY` | Google API key | Required (one of) |
+| `OPENCODE_AUTH_JSON` | OpenCode auth JSON (for GitHub Copilot models) | Required (one of) |
 | `MODEL` | AI model to use (optional, default: `anthropic/claude-sonnet-4-20250514`) | Optional |
 
 **To create a GitLab project access token:**

@@ -145,6 +145,9 @@
 
       echo "Full command: ${FULL_COMMAND}"
 
+    # Set authenticated remote URL so the agent can push
+    - git remote set-url origin "https://oauth2:${GITLAB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+
     # Run refactoring agent
     - |
       echo "Running refactoring agent..."

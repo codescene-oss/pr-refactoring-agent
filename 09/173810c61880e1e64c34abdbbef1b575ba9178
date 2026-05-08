@@ -1,0 +1,19 @@
+gitlab/refactoring-agent.yml
+  s_00182e8518e025::t_76508c30642364 148-150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "09173810c61880e1e64c34abdbbef1b575ba9178",
+  "prompts": {},
+  "sessions": {
+    "s_00182e8518e025": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "91ee448c-4869-4cb9-ae81-34d85c59b75e",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "Kalle Norrestam <kalle@norrestam.se>"
+    }
+  }
+}

@@ -7,10 +7,10 @@
 #   Comment on MR: /run-pipeline COMMAND="skill:fix-code-health-degradations improve complexity"
 
 .refactoring-agent-base:
-  image: alpine:latest
+  image: ubuntu:latest
   before_script:
     # Install dependencies
-    - apk add --no-cache curl unzip jq git bash
+    - apt-get update -qq && apt-get install -y -qq curl unzip jq git
 
     # Detect platform
     - |

@@ -165,6 +165,5 @@
 refactoring-agent:
   extends: .refactoring-agent-base
   rules:
-    # Only run when COMMAND variable is set (from /run-pipeline quick action)
-    # and pipeline source is 'web' (manual trigger) and in MR context
-    - if: $COMMAND != null && $CI_PIPELINE_SOURCE == "web" && $CI_MERGE_REQUEST_IID != null
+    # Only run when COMMAND variable is set and pipeline source is merge_request_event
+    - if: '$COMMAND != null && $CI_PIPELINE_SOURCE == "merge_request_event"'

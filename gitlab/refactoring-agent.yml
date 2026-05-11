@@ -164,9 +164,3 @@
         echo "No changes to push"
       fi
 
-# Default job configuration (triggered by /run-pipeline)
-refactoring-agent:
-  extends: .refactoring-agent-base
-  rules:
-    # Only run when COMMAND variable is set and pipeline source is merge_request_event
-    - if: '$COMMAND != null && $CI_PIPELINE_SOURCE == "merge_request_event"'

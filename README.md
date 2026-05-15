@@ -25,8 +25,8 @@ on:
 
 jobs:
   refactor:
-    # Only run on PR comments that start with /refactor
-    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/refactor')
+    # Only run on PR comments that start with /cs-agent
+    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/cs-agent')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -42,7 +42,7 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-Then comment `/refactor` on any pull request to trigger the agent.
+Then comment `/cs-agent` on any pull request to trigger the agent.
 
 The action automatically:
 - Fetches PR metadata
@@ -54,12 +54,10 @@ The action automatically:
 
 ## Available Skills
 
-The agent includes several pre-built refactoring skills:
+The agent includes two pre-built refactoring skills:
 
-- `skill:fix-code-health-degradations` - Fix code health issues identified in the PR
-- `skill:guiding-refactoring-with-code-health` - Guided refactoring focused on specific files
-- `skill:improve-pr-code-health` - Improve overall code health of the PR
-- `skill:detect-and-fix-code-smells` - Find and fix common code smells
+- `skill:fix-code-health-degradations` - Fix only the Code Health regressions introduced by the PR, without touching pre-existing debt
+- `skill:uplift-code-health` - Raise Code Health for selected files toward a target score, in measurable incremental steps
 
 ## Inputs
 
@@ -100,7 +98,7 @@ on:
 
 jobs:
   refactor:
-    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/refactor')
+    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/cs-agent')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -136,7 +134,7 @@ jobs:
       - uses: codescene-oss/pr-refactoring-agent@v1
         with:
           pr_number: ${{ github.event.pull_request.number }}
-          command: 'skill:improve-pr-code-health'
+          command: 'skill:uplift-code-health'
           push: true
           model: 'anthropic/claude-sonnet-4-20250514'
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
@@ -153,7 +151,7 @@ steps:
   
   - uses: codescene-oss/pr-refactoring-agent@v1
     with:
-      command: 'skill:guiding-refactoring-with-code-health improve src/complex-file.js'
+      command: 'skill:uplift-code-health improve src/complex-file.js'
       model: 'openai/gpt-4-turbo'
       create_branch: 'refactor/complex-file'
       push: true

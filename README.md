@@ -36,7 +36,7 @@ jobs:
       - uses: codescene-oss/pr-refactoring-agent@v1
         with:
           pr_number: ${{ github.event.issue.number }}
-          command: 'skill:fix-code-health-degradations'
+          command: ${{ github.event.comment.body }}
           push: true
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -63,6 +63,7 @@ The agent includes two pre-built refactoring skills:
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
+| `pr_number` | Pull request number (triggers PR checkout and comment) | No | - |
 | `command` | The refactoring command to execute | Yes | - |
 | `model` | AI model to use | No | `anthropic/claude-sonnet-4-20250514` |
 | `version` | Version of the agent to use | No | `latest` |
@@ -108,58 +109,12 @@ jobs:
       - uses: codescene-oss/pr-refactoring-agent@v1
         with:
           pr_number: ${{ github.event.issue.number }}
-          command: 'skill:fix-code-health-degradations'
+          command: ${{ github.event.comment.body }}
           push: true
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-### Automatic Refactoring on Push
-
-```yaml
-name: Auto Refactor
-
-on:
-  pull_request:
-    types: [opened, synchronize]
-
-jobs:
-  refactor:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-    steps:
-      - uses: codescene-oss/pr-refactoring-agent@v1
-        with:
-          pr_number: ${{ github.event.pull_request.number }}
-          command: 'skill:uplift-code-health'
-          push: true
-          model: 'anthropic/claude-sonnet-4-20250514'
-          codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-```
-
-### Custom Model and Branch (Non-PR Context)
-
-For standalone refactoring (not triggered from a PR), checkout manually first:
-
-```yaml
-steps:
-  - uses: actions/checkout@v5
-  
-  - uses: codescene-oss/pr-refactoring-agent@v1
-    with:
-      command: 'skill:uplift-code-health improve src/complex-file.js'
-      model: 'openai/gpt-4-turbo'
-      create_branch: 'refactor/complex-file'
-      push: true
-      codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
-      openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-```
-
-Note: When `pr_number` is not provided, the action assumes code is already checked out and skips PR-specific steps.
 
 ## Required Secrets
 

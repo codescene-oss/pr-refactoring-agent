@@ -1,5 +1,7 @@
 # CodeScene PR Refactoring Agent
 
+> **Note**: This project is under active development and not yet ready for use.
+
 A GitHub Action that brings automated code refactoring and code health improvements to your pull requests. Uses AI-powered analysis to guide refactoring based on CodeScene's code health metrics.
 
 ## Features
@@ -144,7 +146,7 @@ The action supports:
 
 ## License
 
-MIT
+Copyright CodeScene AB. See [LICENSE](LICENSE) for terms.
 
 ## Support
 

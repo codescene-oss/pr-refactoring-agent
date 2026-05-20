@@ -73,6 +73,7 @@ runs:
           core.setOutput('head_ref', pr.head.ref);
           core.setOutput('head_repo', pr.head.repo.full_name);
           core.setOutput('same_repo', String(pr.head.repo.full_name === `${context.repo.owner}/${context.repo.repo}`));
+          core.setOutput('base_ref', pr.base.ref);
 
     - name: Checkout PR branch
       if: inputs.pr_number != ''
@@ -255,6 +256,7 @@ runs:
         REMOTE: ${{ inputs.remote }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
+        BASE_REF: ${{ steps.pr.outputs.base_ref }}
         CS_ACCESS_TOKEN: ${{ inputs.codescene_token }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}

@@ -2,7 +2,9 @@
 
 > **Note**: This project is under active development and not yet ready for use.
 
-A GitHub Action that brings automated code refactoring and code health improvements to your pull requests. Uses AI-powered analysis to guide refactoring based on CodeScene's code health metrics.
+A GitHub Action that enables CodeScene's PR Refactoring Agent so reviewers can trigger Code Health-guided refactoring directly from pull requests.
+
+It keeps refactoring inside the normal review flow while giving teams a consistent way to improve maintainability and prevent regressions.
 
 ## Features
 
@@ -14,7 +16,29 @@ A GitHub Action that brings automated code refactoring and code health improveme
 
 ## Quick Start
 
-### Basic Usage
+1. Configure your repository secrets for CodeScene and at least one supported AI provider.
+2. Add the workflow below to your repository.
+3. Run the refactoring agent by clicking the fix button in the pull request (requires CodeScene PR integration to be enabled).
+
+## Required: Configure repository secrets
+
+Add these secrets to your repository (Settings → Secrets and variables → Actions):
+
+- `CODESCENE_ACCESS_TOKEN` - Get it using the option that matches your setup:
+  - CodeScene Cloud PAT: create it at [Create a Personal Access Token](https://codescene.io/users/me/pat).
+  - CodeScene on-prem PAT: log in to your CodeScene instance, open `Configuration`, go to `Authentication`, then create a token under `Personal Access Tokens`. You can also go directly to `https://<your-cs-host><:port>/configuration/user/token`.
+
+**At least one AI provider:**
+- `ANTHROPIC_API_KEY` - Get from [Anthropic](https://console.anthropic.com)
+- `OPENAI_API_KEY` - Get from [OpenAI](https://platform.openai.com)
+- `GOOGLE_API_KEY` - Get from [Google AI Studio](https://aistudio.google.com)
+- `OPENCODE_AUTH_JSON` - OpenCode auth JSON.
+
+![Example of the pull request fix button flow](./assets/images/pr-fix-button-example.png)
+
+_Example of how the pull request fix button looks when the refactoring agent is available._
+
+### Required: add the agent workflow to GitHub
 
 Add this workflow to your repository at `.github/workflows/refactoring-agent.yml`:
 
@@ -54,6 +78,12 @@ The action automatically:
 - Pushes changes (if `push: true`)
 - Posts a comment with the result
 
+## 💡 The quality of the agent depends on the model
+
+The refactoring quality of the agent depends heavily on the strength of the backing LLM, so use one of the strongest available models from a supported provider.
+
+The refactoring agent supports models from Anthropic, OpenAI, and Google.
+
 ## Available Skills
 
 The agent includes two pre-built refactoring skills:
@@ -65,28 +95,19 @@ The agent includes two pre-built refactoring skills:
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `pr_number` | Pull request number (triggers PR checkout and comment) | No | - |
 | `command` | The refactoring command to execute | Yes | - |
-| `model` | AI model to use | No | `anthropic/claude-sonnet-4-20250514` |
+| `codescene_token` | CodeScene API access token | Yes | - |
+| `model` | AI model to use | Yes | - |
+| `pr_number` | Pull request number (triggers PR checkout and comment) | No | - |
 | `version` | Version of the agent to use | No | `latest` |
 | `create_branch` | Create a new branch before refactoring | No | - |
 | `push` | Push changes to remote after refactoring | No | `false` |
 | `remote` | Git remote name | No | `origin` |
 | `github_token` | GitHub token for authentication | No | `${{ github.token }}` |
-| `codescene_token` | CodeScene API access token | Yes | - |
 | `anthropic_api_key` | Anthropic API key | No | - |
 | `openai_api_key` | OpenAI API key | No | - |
 | `google_api_key` | Google API key | No | - |
 | `opencode_auth_json` | OpenCode auth JSON | No | - |
-
-## Supported Models
-
-The agent supports multiple AI providers:
-
-- **Anthropic**: `anthropic/claude-sonnet-4-20250514`, `anthropic/claude-opus-4-20250514`
-- **OpenAI**: `openai/gpt-4`, `openai/gpt-4-turbo`
-- **Google**: `google/gemini-pro`
-- **GitHub Copilot**: `github-copilot/gpt-4.1` (requires `opencode_auth_json`)
 
 ## Example Workflows
 
@@ -117,18 +138,6 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-
-## Required Secrets
-
-Add these secrets to your repository (Settings → Secrets and variables → Actions):
-
-### Required
-- `CODESCENE_ACCESS_TOKEN` - Get from [CodeScene](https://codescene.com)
-
-### At least one AI provider
-- `ANTHROPIC_API_KEY` - Get from [Anthropic](https://console.anthropic.com)
-- `OPENAI_API_KEY` - Get from [OpenAI](https://platform.openai.com)
-- `GOOGLE_API_KEY` - Get from [Google AI Studio](https://aistudio.google.com)
 
 ## Platform Support
 

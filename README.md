@@ -2,9 +2,9 @@
 
 > **Note**: This project is under active development and not yet ready for use.
 
-This repository contains the instructions and templates for enabling CodeScene's PR Refactoring Agent.
+A GitHub Action that enables CodeScene's PR Refactoring Agent so reviewers can trigger Code Health-guided refactoring directly from pull requests.
 
-The PR Refactoring Agent lets reviewers trigger Code Health-guided refactoring directly from pull requests. It keeps refactoring inside the normal review flow while giving teams a consistent way to improve maintainability and prevent regressions.
+It keeps refactoring inside the normal review flow while giving teams a consistent way to improve maintainability and prevent regressions.
 
 ## Features
 
@@ -18,7 +18,7 @@ The PR Refactoring Agent lets reviewers trigger Code Health-guided refactoring d
 
 1. Configure your repository secrets for CodeScene and at least one supported AI provider.
 2. Add the workflow below to your repository.
-3. Run the refactoring agent by clicking the fix button in the pull request.
+3. Run the refactoring agent by clicking the fix button in the pull request (requires CodeScene PR integration to be enabled).
 
 ## Required: Configure repository secrets
 
@@ -32,6 +32,9 @@ Add these secrets to your repository (Settings → Secrets and variables → Act
 - `ANTHROPIC_API_KEY` - Get from [Anthropic](https://console.anthropic.com)
 - `OPENAI_API_KEY` - Get from [OpenAI](https://platform.openai.com)
 - `GOOGLE_API_KEY` - Get from [Google AI Studio](https://aistudio.google.com)
+
+**Optional (only needed for OpenCode-auth based model providers):**
+- `OPENCODE_AUTH_JSON` - OpenCode auth JSON.
 
 ![Example of the pull request fix button flow](./assets/images/pr-fix-button-example.png)
 

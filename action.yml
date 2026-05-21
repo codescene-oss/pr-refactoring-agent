@@ -75,6 +75,21 @@ runs:
           core.setOutput('same_repo', String(pr.head.repo.full_name === `${context.repo.owner}/${context.repo.repo}`));
           core.setOutput('base_ref', pr.base.ref);
 
+    - name: Create initial PR comment
+      if: inputs.pr_number != ''
+      id: initial_comment
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          const { data: comment } = await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: parseInt('${{ inputs.pr_number }}'),
+            body: '## <img src="https://github.com/codescene-oss.png" width="15" height="15"> CodeScene Refactoring Agent\n\n⏳ Running...\n\n---\nStarted at ' + new Date().toUTCString(),
+          });
+          core.setOutput('comment_id', String(comment.id));
+
     - name: Checkout PR branch
       if: inputs.pr_number != ''
       uses: actions/checkout@v5
@@ -257,6 +272,7 @@ runs:
         GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
         BASE_REF: ${{ steps.pr.outputs.base_ref }}
+        PR_COMMENT_ID: ${{ steps.initial_comment.outputs.comment_id }}
         CS_ACCESS_TOKEN: ${{ inputs.codescene_token }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}

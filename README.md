@@ -132,10 +132,7 @@ Add these secrets to your repository (Settings → Secrets and variables → Act
 
 ## Platform Support
 
-The action supports:
-- Linux (amd64, aarch64)
-- macOS (amd64, aarch64/Apple Silicon)
-- Windows (amd64)
+The action supports Linux runners (amd64, aarch64).
 
 ## How It Works
 

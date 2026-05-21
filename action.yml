@@ -113,43 +113,16 @@ runs:
       id: platform
       shell: bash
       run: |
-        OS="$(uname -s)"
         ARCH="$(uname -m)"
-
-        case "$OS" in
-          Linux)
-            case "$ARCH" in
-              x86_64|amd64)
-                echo "binary_name=refactoring-agent-linux-amd64" >> "$GITHUB_OUTPUT"
-                ;;
-              aarch64|arm64)
-                echo "binary_name=refactoring-agent-linux-aarch64" >> "$GITHUB_OUTPUT"
-                ;;
-              *)
-                echo "::error::Unsupported Linux architecture: $ARCH"
-                exit 1
-                ;;
-            esac
+        case "$ARCH" in
+          x86_64|amd64)
+            echo "binary_name=refactoring-agent-linux-amd64" >> "$GITHUB_OUTPUT"
             ;;
-          Darwin)
-            case "$ARCH" in
-              x86_64|amd64)
-                echo "binary_name=refactoring-agent-macos-amd64" >> "$GITHUB_OUTPUT"
-                ;;
-              arm64|aarch64)
-                echo "binary_name=refactoring-agent-macos-aarch64" >> "$GITHUB_OUTPUT"
-                ;;
-              *)
-                echo "::error::Unsupported macOS architecture: $ARCH"
-                exit 1
-                ;;
-            esac
-            ;;
-          MINGW*|MSYS*|CYGWIN*)
-            echo "binary_name=refactoring-agent-windows-amd64" >> "$GITHUB_OUTPUT"
+          aarch64|arm64)
+            echo "binary_name=refactoring-agent-linux-aarch64" >> "$GITHUB_OUTPUT"
             ;;
           *)
-            echo "::error::Unsupported operating system: $OS"
+            echo "::error::Unsupported architecture: $ARCH"
             exit 1
             ;;
         esac
@@ -229,17 +202,11 @@ runs:
 
         unzip -q "${BINARY_NAME}.zip"
 
-        # Handle different archive contents based on platform
         if [ -f "refactoring-agent" ]; then
           chmod +x refactoring-agent
-        elif [ -f "refactoring-agent.exe" ]; then
-          chmod +x refactoring-agent.exe || true
         elif [ -f "$BINARY_NAME" ]; then
           mv "$BINARY_NAME" refactoring-agent
           chmod +x refactoring-agent
-        elif [ -f "${BINARY_NAME}.exe" ]; then
-          mv "${BINARY_NAME}.exe" refactoring-agent.exe
-          chmod +x refactoring-agent.exe || true
         else
           echo "::error::Could not find binary in archive"
           ls -la
@@ -280,11 +247,7 @@ runs:
       run: |
         set -euo pipefail
 
-        if [ -f "${RUNNER_TEMP}/refactoring-agent/refactoring-agent.exe" ]; then
-          BINARY="${RUNNER_TEMP}/refactoring-agent/refactoring-agent.exe"
-        else
-          BINARY="${RUNNER_TEMP}/refactoring-agent/refactoring-agent"
-        fi
+        BINARY="${RUNNER_TEMP}/refactoring-agent/refactoring-agent"
 
         # Prepend github-pr-comment skill if running in PR context
         if [ -n "${PR_NUMBER}" ]; then

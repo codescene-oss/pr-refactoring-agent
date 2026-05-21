@@ -32,8 +32,6 @@ Add these secrets to your repository (Settings → Secrets and variables → Act
 - `ANTHROPIC_API_KEY` - Get from [Anthropic](https://console.anthropic.com)
 - `OPENAI_API_KEY` - Get from [OpenAI](https://platform.openai.com)
 - `GOOGLE_API_KEY` - Get from [Google AI Studio](https://aistudio.google.com)
-
-**Optional (only needed for OpenCode-auth based model providers):**
 - `OPENCODE_AUTH_JSON` - OpenCode auth JSON.
 
 ![Example of the pull request fix button flow](./assets/images/pr-fix-button-example.png)

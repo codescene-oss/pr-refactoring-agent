@@ -40,6 +40,9 @@ inputs:
   codescene_token:
     description: 'CodeScene API access token'
     required: true
+  codescene_onprem_url:
+    description: 'CodeScene On-prem URL (required for on-prem instances)'
+    required: false
   anthropic_api_key:
     description: 'Anthropic API key (required for anthropic/* models)'
     required: false
@@ -241,6 +244,7 @@ runs:
         BASE_REF: ${{ steps.pr.outputs.base_ref }}
         PR_COMMENT_ID: ${{ steps.initial_comment.outputs.comment_id }}
         CS_ACCESS_TOKEN: ${{ inputs.codescene_token }}
+        CS_ONPREM_URL: ${{ inputs.codescene_onprem_url }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
         GOOGLE_API_KEY: ${{ inputs.google_api_key }}

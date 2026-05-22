@@ -16,16 +16,16 @@ inputs:
     required: false
     default: 'anthropic/claude-sonnet-4-20250514'
   version:
-    description: 'Version of refactoring-agent to use (defaults to latest)'
+    description: 'Version of refactoring-agent to use'
     required: false
-    default: 'latest'
+    default: 'v0.0.1-beta13'
   create_branch:
     description: 'Create and switch to a new branch before running'
     required: false
   push:
     description: 'Push changes to remote after successful refactoring'
     required: false
-    default: 'false'
+    default: 'true'
   remote:
     description: 'Git remote name to push to'
     required: false

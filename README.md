@@ -63,7 +63,6 @@ jobs:
         with:
           pr_number: ${{ github.event.issue.number }}
           command: ${{ github.event.comment.body }}
-          push: true
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
@@ -75,7 +74,7 @@ The action automatically:
 - Checks out the PR branch
 - Configures git
 - Runs the refactoring
-- Pushes changes (if `push: true`)
+- Pushes changes to the PR branch
 - Posts a comment with the result
 
 ## 💡 The quality of the agent depends on the model
@@ -100,10 +99,8 @@ The agent includes two pre-built refactoring skills:
 | `model` | AI model to use | Yes | - |
 | `pr_number` | Pull request number (triggers PR checkout and comment) | No | - |
 | `version` | Version of the agent to use | No | `latest` |
-| `create_branch` | Create a new branch before refactoring | No | - |
-| `push` | Push changes to remote after refactoring | No | `false` |
-| `remote` | Git remote name | No | `origin` |
 | `github_token` | GitHub token for authentication | No | `${{ github.token }}` |
+| `codescene_onprem_url` | CodeScene on-premises URL | No | - |
 | `anthropic_api_key` | Anthropic API key | No | - |
 | `openai_api_key` | OpenAI API key | No | - |
 | `google_api_key` | Google API key | No | - |
@@ -133,7 +130,6 @@ jobs:
         with:
           pr_number: ${{ github.event.issue.number }}
           command: ${{ github.event.comment.body }}
-          push: true
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```

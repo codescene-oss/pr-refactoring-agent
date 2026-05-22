@@ -19,17 +19,6 @@ inputs:
     description: 'Version of refactoring-agent to use (defaults to latest)'
     required: false
     default: 'latest'
-  create_branch:
-    description: 'Create and switch to a new branch before running'
-    required: false
-  push:
-    description: 'Push changes to remote after successful refactoring'
-    required: false
-    default: 'false'
-  remote:
-    description: 'Git remote name to push to'
-    required: false
-    default: 'origin'
   github_token:
     description: 'GitHub token for API access and checkout'
     required: false
@@ -236,9 +225,6 @@ runs:
         COMMAND: ${{ inputs.command }}
         PR_NUMBER: ${{ inputs.pr_number }}
         MODEL: ${{ inputs.model }}
-        CREATE_BRANCH: ${{ inputs.create_branch }}
-        PUSH: ${{ inputs.push }}
-        REMOTE: ${{ inputs.remote }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
         BASE_REF: ${{ steps.pr.outputs.base_ref }}
@@ -267,15 +253,7 @@ runs:
           FULL_COMMAND="${COMMAND}"
         fi
 
-        ARGS=("run" "$FULL_COMMAND" "--model" "$MODEL")
-
-        if [ -n "$CREATE_BRANCH" ]; then
-          ARGS+=("--create-branch" "$CREATE_BRANCH")
-        fi
-
-        if [ "$PUSH" = "true" ]; then
-          ARGS+=("--push" "--remote" "$REMOTE")
-        fi
+        ARGS=("run" "$FULL_COMMAND" "--model" "$MODEL" "--push")
 
         echo "Running: $BINARY ${ARGS[*]}"
         "$BINARY" "${ARGS[@]}"

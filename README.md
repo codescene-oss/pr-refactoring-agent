@@ -26,7 +26,7 @@ Add these secrets to your repository (Settings → Secrets and variables → Act
 
 - `CODESCENE_ACCESS_TOKEN` - Get it using the option that matches your setup:
   - CodeScene Cloud PAT: create it at [Create a Personal Access Token](https://codescene.io/users/me/pat).
-  - CodeScene on-prem PAT: log in to your CodeScene instance, open `Configuration`, go to `Authentication`, then create a token under `Personal Access Tokens`. You can also go directly to `https://<your-cs-host><:port>/configuration/user/token`.
+  - CodeScene on-prem PAT: log in to your CodeScene instance, open `Configuration`, go to `Authentication`, then create a token under `Personal Access Tokens`. You can also go directly to `https://<your-cs-host><:port>/configuration/user/token`. You must also pass `codescene_onprem_url` in the workflow (e.g. `codescene_onprem_url: https://codescene.mycompany.com`).
 
 **At least one AI provider:**
 - `ANTHROPIC_API_KEY` - Get from [Anthropic](https://console.anthropic.com)

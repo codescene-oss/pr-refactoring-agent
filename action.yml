@@ -18,7 +18,7 @@ inputs:
   version:
     description: 'Version of refactoring-agent to use (defaults to latest)'
     required: false
-    default: 'latest'
+    default: 'v0.0.1-beta12'
   github_token:
     description: 'GitHub token for API access and checkout'
     required: false

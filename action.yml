@@ -231,10 +231,10 @@ runs:
           --arg gh_repo "$GITHUB_REPOSITORY" \
           --arg pr_num "${PR_NUMBER:-}" \
           --arg comment_id "${PR_COMMENT_ID:-}" \
-          --arg anthropic_key "${ANTHROPIC_API_KEY:-}" \
-          --arg openai_key "${OPENAI_API_KEY:-}" \
-          --arg google_key "${GOOGLE_API_KEY:-}" \
-          --arg opencode_auth "${OPENCODE_AUTH_JSON:-}" \
+          --arg anthropic_key "$(printf '%s' "${ANTHROPIC_API_KEY:-}" | tr -d '\n')" \
+          --arg openai_key "$(printf '%s' "${OPENAI_API_KEY:-}" | tr -d '\n')" \
+          --arg google_key "$(printf '%s' "${GOOGLE_API_KEY:-}" | tr -d '\n')" \
+          --arg opencode_auth "$(printf '%s' "${OPENCODE_AUTH_JSON:-}" | tr -d '\n')" \
           '{
             codescene_access_token: $token,
             tracking: {

@@ -89,6 +89,7 @@ runs:
         ref: ${{ steps.pr.outputs.head_ref }}
         token: ${{ inputs.github_token }}
         fetch-depth: 0
+        clean: false
 
     - name: Configure git
       if: inputs.pr_number != ''

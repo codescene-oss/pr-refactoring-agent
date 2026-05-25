@@ -63,6 +63,7 @@ jobs:
         with:
           pr_number: ${{ github.event.issue.number }}
           command: ${{ github.event.comment.body }}
+          model: 'anthropic/claude-sonnet-4-6-20251101'
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
@@ -130,6 +131,7 @@ jobs:
         with:
           pr_number: ${{ github.event.issue.number }}
           command: ${{ github.event.comment.body }}
+          model: 'anthropic/claude-sonnet-4-6-20251101'
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```

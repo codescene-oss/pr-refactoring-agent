@@ -155,4 +155,4 @@ Copyright CodeScene AB. See [LICENSE](LICENSE) for terms.
 ## Support
 
 - [GitHub Issues](https://github.com/codescene-oss/pr-refactoring-agent/issues)
-- [Documentation](https://codescene.com/docs)
+- [Documentation](https://codescene.io/docs/developer-tools/pr-refactoring-agent.html)

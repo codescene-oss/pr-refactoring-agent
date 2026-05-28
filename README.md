@@ -1,7 +1,5 @@
 # CodeScene PR Refactoring Agent
 
-> **Note**: This project is under active development and not yet ready for use.
-
 A GitHub Action that enables CodeScene's PR Refactoring Agent so reviewers can trigger Code Health-guided refactoring directly from pull requests.
 
 It keeps refactoring inside the normal review flow while giving teams a consistent way to improve maintainability and prevent regressions.

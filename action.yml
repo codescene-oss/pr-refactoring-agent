@@ -70,11 +70,12 @@ runs:
       with:
         github-token: ${{ inputs.github_token }}
         script: |
+          const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
           const { data: comment } = await github.rest.issues.createComment({
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: parseInt('${{ inputs.pr_number }}'),
-            body: '## <img src="https://github.com/codescene-oss.png" width="15" height="15"> CodeScene Refactoring Agent\n\n⏳ Running...\n\n---\nStarted at ' + new Date().toUTCString(),
+            body: `## <img src="https://github.com/codescene-oss.png" width="15" height="15"> CodeScene Refactoring Agent\n\n⏳ [Running...](${runUrl})\n\n---\nStarted at ` + new Date().toUTCString(),
           });
           core.setOutput('comment_id', String(comment.id));
 

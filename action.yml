@@ -15,9 +15,9 @@ inputs:
     description: 'AI model to use (e.g., "anthropic/claude-sonnet-4-20250514")'
     required: true
   version:
-    description: 'Version of refactoring-agent to use (defaults to latest)'
+    description: 'Version of refactoring-agent to use'
     required: false
-    default: 'v0.0.1-beta21'
+    default: 'v1.0.0'
   github_token:
     description: 'GitHub token for API access and checkout'
     required: false

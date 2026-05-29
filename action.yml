@@ -75,7 +75,7 @@ runs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: parseInt('${{ inputs.pr_number }}'),
-            body: `## <img src="https://github.com/codescene-oss.png" width="15" height="15"> CodeScene Refactoring Agent\n\n⏳ Running...\n\n---\nStarted at ` + new Date().toUTCString() + ` · [View logs](${runUrl})`,
+            body: `## <img src="https://github.com/codescene-oss.png" width="15" height="15"> CodeScene Refactoring Agent\n\n⏳ Running...\n\n---\nStarted at ` + new Date().toUTCString() + ` · Detailed logs? [View logs](${runUrl})`,
           });
           core.setOutput('comment_id', String(comment.id));
 

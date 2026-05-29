@@ -60,8 +60,8 @@ runs:
 
           core.setOutput('head_ref', pr.head.ref);
           core.setOutput('head_repo', pr.head.repo.full_name);
-          core.setOutput('same_repo', String(pr.head.repo.full_name === `${context.repo.owner}/${context.repo.repo}`));
           core.setOutput('base_ref', pr.base.ref);
+          core.setOutput('run_url', `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`);
 
     - name: Create initial PR comment
       if: inputs.pr_number != ''
@@ -70,12 +70,12 @@ runs:
       with:
         github-token: ${{ inputs.github_token }}
         script: |
-          const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+          const runUrl = '${{ steps.pr.outputs.run_url }}';
           const { data: comment } = await github.rest.issues.createComment({
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: parseInt('${{ inputs.pr_number }}'),
-            body: `## <img src="https://github.com/codescene-oss.png" width="15" height="15"> CodeScene Refactoring Agent\n\n⏳ [Running...](${runUrl})\n\n---\nStarted at ` + new Date().toUTCString(),
+            body: `## <img src="https://github.com/codescene-oss.png" width="15" height="15"> CodeScene Refactoring Agent\n\n⏳ Running...\n\n---\nStarted at ` + new Date().toUTCString() + ` · [View logs](${runUrl})`,
           });
           core.setOutput('comment_id', String(comment.id));
 
@@ -171,6 +171,7 @@ runs:
         GITHUB_REPOSITORY: ${{ github.repository }}
         PR_NUMBER: ${{ inputs.pr_number }}
         PR_COMMENT_ID: ${{ steps.initial_comment.outputs.comment_id }}
+        GITHUB_RUN_URL: ${{ steps.pr.outputs.run_url }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
         GOOGLE_API_KEY: ${{ inputs.google_api_key }}
@@ -186,6 +187,7 @@ runs:
           --arg gh_repo "$GITHUB_REPOSITORY" \
           --arg pr_num "${PR_NUMBER:-}" \
           --arg comment_id "${PR_COMMENT_ID:-}" \
+          --arg run_url "${GITHUB_RUN_URL:-}" \
           --arg anthropic_key "$(printf '%s' "${ANTHROPIC_API_KEY:-}" | tr -d '\n')" \
           --arg openai_key "$(printf '%s' "${OPENAI_API_KEY:-}" | tr -d '\n')" \
           --arg google_key "$(printf '%s' "${GOOGLE_API_KEY:-}" | tr -d '\n')" \
@@ -207,7 +209,8 @@ runs:
                 github: ({
                   token: $gh_token,
                   repository: $gh_repo,
-                  pr_number: $pr_num
+                  pr_number: $pr_num,
+                  run_url: $run_url
                 } + (if $comment_id != "" then { pr_comment_id: $comment_id } else {} end))
               }
             } else {} end)')

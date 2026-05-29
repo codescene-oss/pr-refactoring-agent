@@ -171,6 +171,7 @@ runs:
         GITHUB_REPOSITORY: ${{ github.repository }}
         PR_NUMBER: ${{ inputs.pr_number }}
         PR_COMMENT_ID: ${{ steps.initial_comment.outputs.comment_id }}
+        BASE_REF: ${{ steps.pr.outputs.base_ref }}
         GITHUB_RUN_URL: ${{ steps.pr.outputs.run_url }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
@@ -187,7 +188,8 @@ runs:
           --arg gh_repo "$GITHUB_REPOSITORY" \
           --arg pr_num "${PR_NUMBER:-}" \
           --arg comment_id "${PR_COMMENT_ID:-}" \
-          --arg run_url "${GITHUB_RUN_URL:-}" \
+          --arg base_ref "$BASE_REF" \
+          --arg run_url "$GITHUB_RUN_URL" \
           --arg anthropic_key "$(printf '%s' "${ANTHROPIC_API_KEY:-}" | tr -d '\n')" \
           --arg openai_key "$(printf '%s' "${OPENAI_API_KEY:-}" | tr -d '\n')" \
           --arg google_key "$(printf '%s' "${GOOGLE_API_KEY:-}" | tr -d '\n')" \
@@ -205,6 +207,7 @@ runs:
           }
           + (if $onprem != "" then { codescene_onprem_url: $onprem } else {} end)
           + (if $pr_num != "" then {
+              git: { base_ref: $base_ref },
               ci: {
                 github: ({
                   token: $gh_token,

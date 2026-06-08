@@ -63,22 +63,6 @@ runs:
           core.setOutput('base_ref', pr.base.ref);
           core.setOutput('run_url', `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`);
 
-    - name: Create initial PR comment
-      if: inputs.pr_number != ''
-      id: initial_comment
-      uses: actions/github-script@v7
-      with:
-        github-token: ${{ inputs.github_token }}
-        script: |
-          const runUrl = '${{ steps.pr.outputs.run_url }}';
-          const { data: comment } = await github.rest.issues.createComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: parseInt('${{ inputs.pr_number }}'),
-            body: `## <img src="https://github.com/codescene-oss.png" width="15" height="15"> CodeScene Refactoring Agent\n\n⏳ Running...\n\n---\nStarted at ` + new Date().toUTCString() + ` · Detailed logs? [View logs](${runUrl})`,
-          });
-          core.setOutput('comment_id', String(comment.id));
-
     - name: Checkout PR branch
       if: inputs.pr_number != ''
       uses: actions/checkout@v5
@@ -170,7 +154,6 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github_token }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         PR_NUMBER: ${{ inputs.pr_number }}
-        PR_COMMENT_ID: ${{ steps.initial_comment.outputs.comment_id }}
         BASE_REF: ${{ steps.pr.outputs.base_ref }}
         GITHUB_RUN_URL: ${{ steps.pr.outputs.run_url }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
@@ -187,7 +170,6 @@ runs:
           --arg gh_token "$GITHUB_TOKEN" \
           --arg gh_repo "$GITHUB_REPOSITORY" \
           --arg pr_num "${PR_NUMBER:-}" \
-          --arg comment_id "${PR_COMMENT_ID:-}" \
           --arg base_ref "$BASE_REF" \
           --arg run_url "$GITHUB_RUN_URL" \
           --arg anthropic_key "$(printf '%s' "${ANTHROPIC_API_KEY:-}" | tr -d '\n')" \
@@ -208,13 +190,14 @@ runs:
           + (if $onprem != "" then { codescene_onprem_url: $onprem } else {} end)
           + (if $pr_num != "" then {
               git: { base_ref: $base_ref },
+              plugins: ["github-pr-status-reporter"],
               ci: {
-                github: ({
+                github: {
                   token: $gh_token,
                   repository: $gh_repo,
                   pr_number: $pr_num,
                   run_url: $run_url
-                } + (if $comment_id != "" then { pr_comment_id: $comment_id } else {} end))
+                }
               }
             } else {} end)')
 
@@ -240,16 +223,8 @@ runs:
 
         BINARY="${RUNNER_TEMP}/refactoring-agent/refactoring-agent"
 
-        # Prepend github-pr-comment skill if running in PR context
-        if [ -n "${PR_NUMBER}" ]; then
-          # Strip any command prefix starting with / (e.g., /cs-agent, /refactor, etc.)
-          echo "COMMAND: ${COMMAND}"
-          STRIPPED_COMMAND=$(echo "$COMMAND" | sed 's|^/[^ ]\+ \+||')
-          echo "STRIPPED_COMMAND: ${STRIPPED_COMMAND}"
-          FULL_COMMAND="skill:github-pr-comment ${STRIPPED_COMMAND}"
-        else
-          FULL_COMMAND="${COMMAND}"
-        fi
+        # Strip any command prefix starting with / (e.g., /cs-agent, /refactor, etc.)
+        FULL_COMMAND=$(echo "$COMMAND" | sed 's|^/[^ ]\+ \+||')
 
         ARGS=("run" "$FULL_COMMAND" "--model" "$MODEL" "--push")
 

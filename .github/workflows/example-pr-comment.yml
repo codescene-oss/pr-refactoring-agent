@@ -18,7 +18,7 @@ jobs:
       issues: write
     steps:
       - name: Run refactoring agent
-        uses: codescene-oss/pr-refactoring-agent@v1
+        uses: codescene-oss/pr-refactoring-agent@v1.0.1
         with:
           pr_number: ${{ github.event.issue.number }}
           command: 'skill:fix-code-health-degradations'

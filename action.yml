@@ -40,6 +40,10 @@ inputs:
   opencode_auth_json:
     description: 'OpenCode auth JSON (required for github-copilot/* models)'
     required: false
+  print_logs:
+    description: 'Print OpenCode logs to pipeline output'
+    required: false
+    default: 'false'
 
 runs:
   using: 'composite'
@@ -177,6 +181,7 @@ runs:
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
         GOOGLE_API_KEY: ${{ inputs.google_api_key }}
         OPENCODE_AUTH_JSON: ${{ inputs.opencode_auth_json }}
+        PRINT_LOGS: ${{ inputs.print_logs }}
       run: |
         set -euo pipefail
 
@@ -194,8 +199,10 @@ runs:
           --arg openai_key "$(printf '%s' "${OPENAI_API_KEY:-}" | tr -d '\n')" \
           --arg google_key "$(printf '%s' "${GOOGLE_API_KEY:-}" | tr -d '\n')" \
           --arg opencode_auth "$(printf '%s' "${OPENCODE_AUTH_JSON:-}" | tr -d '\n')" \
+          --argjson print_logs "$([ "${PRINT_LOGS:-false}" = "true" ] && echo true || echo false)" \
           '{
             codescene_access_token: $token,
+            print_logs: $print_logs,
             tracking: {
               environment: "github-action"
             },

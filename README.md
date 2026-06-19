@@ -57,7 +57,7 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      - uses: codescene-oss/pr-refactoring-agent@v1.0.6
+      - uses: codescene-oss/pr-refactoring-agent@v1.0.7
         with:
           pr_number: ${{ github.event.issue.number }}
           command: ${{ github.event.comment.body }}
@@ -104,6 +104,7 @@ The agent includes two pre-built refactoring skills:
 | `openai_api_key` | OpenAI API key | No | - |
 | `google_api_key` | Google API key | No | - |
 | `opencode_auth_json` | OpenCode auth JSON | No | - |
+| `ca_bundle` | Path to a custom CA certificate bundle (PEM format) for SSL/TLS verification | No | - |
 
 ## Example Workflows
 
@@ -125,7 +126,7 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      - uses: codescene-oss/pr-refactoring-agent@v1.0.6
+      - uses: codescene-oss/pr-refactoring-agent@v1.0.7
         with:
           pr_number: ${{ github.event.issue.number }}
           command: ${{ github.event.comment.body }}

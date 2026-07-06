@@ -46,6 +46,7 @@ inputs:
   print_logs:
     description: 'Print OpenCode logs into stdout'
     required: false
+    default: false
 
 runs:
   using: 'composite'
@@ -188,6 +189,7 @@ runs:
           --arg opencode_auth "$(printf '%s' "${OPENCODE_AUTH_JSON:-}" | tr -d '\n')" \
           '{
             codescene_access_token: $token,
+            print_logs: $print_logs,
             tracking: {
               environment: "github-action"
             },

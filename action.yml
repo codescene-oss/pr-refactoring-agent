@@ -176,7 +176,7 @@ runs:
         CONFIG=$(jq -n \
           --arg token "$CS_ACCESS_TOKEN" \
           --arg onprem "${CS_ONPREM_URL:-}" \
-          --arg print_logs ${CS_PRINT_LOGS:-} \
+          --argjson print_logs "${CS_PRINT_LOGS:-false}" \
           --arg ca_bundle "${CA_BUNDLE:-}" \
           --arg gh_token "$GITHUB_TOKEN" \
           --arg gh_repo "$GITHUB_REPOSITORY" \

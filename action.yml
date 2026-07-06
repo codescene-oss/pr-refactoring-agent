@@ -157,7 +157,7 @@ runs:
       env:
         CS_ACCESS_TOKEN: ${{ inputs.codescene_token }}
         CS_ONPREM_URL: ${{ inputs.codescene_onprem_url }}
-        CS_PRINT_LOGS: ${{ inputs.codescene.print_logs }}
+        CS_PRINT_LOGS: ${{ inputs.print_logs }}
         GITHUB_TOKEN: ${{ inputs.github_token }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         PR_NUMBER: ${{ inputs.pr_number }}

@@ -148,7 +148,7 @@ jobs:
 
 - **No official headless support.** GitHub does not officially support connecting OpenCode (or other third-party tools) to GitHub Copilot without the interactive OAuth flow. The approach above is a supported-in-practice workaround: you complete the OAuth flow locally and reuse the tokens in CI.
 - **Tokens can expire.** OAuth `access` tokens are short-lived; the `refresh` token is used to obtain new ones. If the agent stops authenticating, re-run `opencode auth login` locally and update the `OPENCODE_AUTH_JSON` secret.
-- **Avoid the PAT + `Copilot-Integration-Id` header hack.** A commonly shared workaround injects a Personal Access Token and spoofs the `Copilot-Integration-Id: copilot-developer-cli` header. GitHub has confirmed this is **not supported for third-party tools and warned it can get accounts flagged for abuse.** We do not recommend it. Background and GitHub's official response are tracked in [anomalyco/opencode#12258](https://github.com/anomalyco/opencode/issues/12258).
+- **Tread carefully with the PAT + `Copilot-Integration-Id` header workaround.** A commonly shared alternative injects a Personal Access Token and sets the `Copilot-Integration-Id: copilot-developer-cli` header. It can work, but GitHub has stated this is **not supported for third-party tools and that it could get accounts flagged for abuse** — so weigh that risk before relying on it. Background and GitHub's official response are tracked in [anomalyco/opencode#12258](https://github.com/anomalyco/opencode/issues/12258).
 
 ## Available Skills
 

@@ -90,6 +90,35 @@ runs:
         echo "Current branch: $(git branch --show-current)"
         echo "Current commit: $(git rev-parse HEAD)"
 
+    - name: Create initial PR comment
+      if: inputs.pr_number != ''
+      id: comment
+      uses: actions/github-script@v8
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          const prNumber = parseInt('${{ inputs.pr_number }}');
+          const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          const timestamp = new Date().toISOString().replace("T", " ").replace(/\.\d+Z$/, " UTC");
+          const body = [
+            '<!-- cs-agent:status -->',
+            '## <img src="https://github.com/codescene-oss.png" width="15" height="15"> CodeScene Refactoring Agent',
+            '',
+            'Running...',
+            '',
+            '---',
+            `Started at ${timestamp} | [View logs](${runUrl})`,
+          ].join('\n');
+
+          const { data } = await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: prNumber,
+            body,
+          });
+
+          core.setOutput('id', data.id.toString());
+
     - name: Determine platform
       id: platform
       shell: bash
@@ -164,6 +193,7 @@ runs:
         PR_NUMBER: ${{ inputs.pr_number }}
         BASE_REF: ${{ steps.pr.outputs.base_ref }}
         GITHUB_RUN_URL: ${{ steps.pr.outputs.run_url }}
+        PR_COMMENT_ID: ${{ steps.comment.outputs.id }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
         OPENAI_API_KEY: ${{ inputs.openai_api_key }}
         GOOGLE_API_KEY: ${{ inputs.google_api_key }}
@@ -183,6 +213,7 @@ runs:
           --arg pr_num "${PR_NUMBER:-}" \
           --arg base_ref "$BASE_REF" \
           --arg run_url "$GITHUB_RUN_URL" \
+          --arg comment_id "${PR_COMMENT_ID:-}" \
           --arg anthropic_key "$(printf '%s' "${ANTHROPIC_API_KEY:-}" | tr -d '\n')" \
           --arg openai_key "$(printf '%s' "${OPENAI_API_KEY:-}" | tr -d '\n')" \
           --arg google_key "$(printf '%s' "${GOOGLE_API_KEY:-}" | tr -d '\n')" \
@@ -205,12 +236,13 @@ runs:
               git: { base_ref: $base_ref },
               plugins: ["github-pr-status-reporter"],
               ci: {
-                github: {
+                github: ({
                   token: $gh_token,
                   repository: $gh_repo,
                   pr_number: $pr_num,
                   run_url: $run_url
                 }
+                + (if $comment_id != "" then { pr_comment_id: $comment_id } else {} end))
               }
             } else {} end)')
 

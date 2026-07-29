@@ -46,11 +46,19 @@ name: PR Refactoring Agent
 on:
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull request number'
+        required: true
+      command:
+        description: 'Command to run'
+        required: true
 
 jobs:
   refactor:
-    # Only run on PR comments that start with /cs-agent
-    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/cs-agent')
+    # Only run on PR comments that start with /cs-agent, or on workflow_dispatch
+    if: github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request != null && contains(github.event.comment.body, '/cs-agent'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -59,14 +67,14 @@ jobs:
     steps:
       - uses: codescene-oss/pr-refactoring-agent@v1.0.8
         with:
-          pr_number: ${{ github.event.issue.number }}
-          command: ${{ github.event.comment.body }}
+          pr_number: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.issue.number }}
+          command: ${{ github.event_name == 'workflow_dispatch' && inputs.command || github.event.comment.body }}
           model: 'anthropic/claude-sonnet-4-6-20251101'
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
-Then comment `/cs-agent` on any pull request to trigger the agent.
+Then comment `/cs-agent` on any pull request to trigger the agent, or run it manually from the Actions tab using **workflow_dispatch**.
 
 The action automatically:
 - Fetches PR metadata
@@ -125,10 +133,18 @@ name: PR Refactoring Agent
 on:
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull request number'
+        required: true
+      command:
+        description: 'Command to run'
+        required: true
 
 jobs:
   refactor:
-    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/cs-agent')
+    if: github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request != null && contains(github.event.comment.body, '/cs-agent'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -137,8 +153,8 @@ jobs:
     steps:
       - uses: codescene-oss/pr-refactoring-agent@v1.0.8
         with:
-          pr_number: ${{ github.event.issue.number }}
-          command: ${{ github.event.comment.body }}
+          pr_number: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.issue.number }}
+          command: ${{ github.event_name == 'workflow_dispatch' && inputs.command || github.event.comment.body }}
           model: 'github-copilot/claude-sonnet-4.5'
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
           opencode_auth_json: ${{ secrets.OPENCODE_AUTH_JSON }}
@@ -176,7 +192,7 @@ The agent includes two pre-built refactoring skills:
 
 ## Example Workflows
 
-### Trigger on PR Comment
+### Trigger on PR Comment or Manually
 
 ```yaml
 name: PR Refactoring
@@ -184,10 +200,18 @@ name: PR Refactoring
 on:
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull request number'
+        required: true
+      command:
+        description: 'Command to run'
+        required: true
 
 jobs:
   refactor:
-    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/cs-agent')
+    if: github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request != null && contains(github.event.comment.body, '/cs-agent'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -196,8 +220,8 @@ jobs:
     steps:
       - uses: codescene-oss/pr-refactoring-agent@v1.0.8
         with:
-          pr_number: ${{ github.event.issue.number }}
-          command: ${{ github.event.comment.body }}
+          pr_number: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.issue.number }}
+          command: ${{ github.event_name == 'workflow_dispatch' && inputs.command || github.event.comment.body }}
           model: 'anthropic/claude-sonnet-4-6-20251101'
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

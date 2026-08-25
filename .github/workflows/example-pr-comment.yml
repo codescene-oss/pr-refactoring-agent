@@ -22,7 +22,6 @@ jobs:
         with:
           pr_number: ${{ github.event.issue.number }}
           command: 'skill:fix-code-health-degradations'
-          model: 'anthropic/claude-sonnet-4-20250514'
-          push: true
+          model: 'anthropic/claude-sonnet-4-6-20251101'
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

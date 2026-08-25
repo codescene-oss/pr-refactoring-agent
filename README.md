@@ -72,8 +72,7 @@ The action automatically:
 - Fetches PR metadata
 - Checks out the PR branch
 - Configures git
-- Loads the apply reporter required by refactoring skills
-- Reports status to GitHub when a pull request number is provided
+- Loads the apply and GitHub status reporters
 - Runs the refactoring
 - Pushes changes to the PR branch
 - Posts a comment with the result

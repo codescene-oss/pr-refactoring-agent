@@ -72,6 +72,8 @@ The action automatically:
 - Fetches PR metadata
 - Checks out the PR branch
 - Configures git
+- Loads the apply reporter required by refactoring skills
+- Reports status to GitHub when a pull request number is provided
 - Runs the refactoring
 - Pushes changes to the PR branch
 - Posts a comment with the result
@@ -164,7 +166,7 @@ The agent includes two pre-built refactoring skills:
 | `command` | The refactoring command to execute | Yes | - |
 | `codescene_token` | CodeScene API access token | Yes | - |
 | `model` | AI model to use | Yes | - |
-| `pr_number` | Pull request number (triggers PR checkout and comment) | No | - |
+| `pr_number` | Pull request number (triggers PR checkout and GitHub status reporting) | No | - |
 | `version` | Version of the agent to use | No | `latest` |
 | `github_token` | GitHub token for authentication | No | `${{ github.token }}` |
 | `codescene_onprem_url` | CodeScene on-premises URL | No | - |

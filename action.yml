@@ -193,6 +193,8 @@ runs:
             tracking: {
               environment: "github-action"
             },
+            plugins: (["refactoring-reporter-apply"]
+              + (if $pr_num != "" then ["github-pr-status-reporter"] else [] end)),
             provider: ({}
               + (if $anthropic_key != "" then { anthropic_api_key: $anthropic_key } else {} end)
               + (if $openai_key != "" then { openai_api_key: $openai_key } else {} end)
@@ -203,7 +205,6 @@ runs:
           + (if $ca_bundle != "" then { ca_bundle: $ca_bundle } else {} end)
           + (if $pr_num != "" then {
               git: { base_ref: $base_ref },
-              plugins: ["github-pr-status-reporter"],
               ci: {
                 github: {
                   token: $gh_token,

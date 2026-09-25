@@ -77,6 +77,45 @@ The action automatically:
 - Pushes changes to the PR branch
 - Posts a comment with the result
 
+## Signed and Verified commits
+
+The agent can create commits that GitHub displays as **Verified**. The example
+workflow above already provides the required configuration:
+
+```yaml
+permissions:
+  contents: write
+```
+
+By default, the action uses `${{ github.token }}`. This token is a GitHub App
+installation token for the GitHub Actions app. When the pull request branch is
+in the same repository, the agent uses GitHub's Git Database API to create the
+commit without supplying a custom author, committer, or signature. GitHub then
+signs the commit and reports it as verified.
+
+If you pass a custom `github_token`, use a GitHub App installation token with:
+
+- `Contents: Read and write` permission for the repository.
+- Permission under the repository's branch protection and rulesets to update
+  the pull request branch.
+- Access to the repository that owns the pull request branch.
+
+The action cannot create a signed commit in a fork using the base repository's
+token. Fork pull requests continue to follow GitHub's token and permission
+restrictions.
+
+If the token is missing or GitHub rejects the API operation, the agent falls
+back to its existing local `git commit` and push behavior. That fallback commit
+is not automatically signed. In a repository that requires signed commits, the
+push can therefore be rejected. Check the workflow logs for
+`created GitHub-verified commit` to confirm that the signed path was used.
+
+> [!NOTE]
+> A Personal Access Token can authorize repository writes, but it does not give
+> GitHub an app identity to sign the commit automatically. Use the default
+> `${{ github.token }}` or another GitHub App installation token when Verified
+> commits are required.
+
 ## 💡 The quality of the agent depends on the model
 
 The refactoring quality of the agent depends heavily on the strength of the backing LLM, so use one of the strongest available models from a supported provider.

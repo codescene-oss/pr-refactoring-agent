@@ -1,16 +1,20 @@
 name: PR Refactoring Agent (Example)
 
-# This is an example workflow showing how to trigger the refactoring agent
-# from PR comments. Copy this to your repository and customize as needed.
+# This is an example workflow for the CodeScene Fix button and PR comments.
+# Copy this to your repository's default branch and customize as needed.
 
 on:
   issue_comment:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number: { required: true, type: string }
+      command: { required: true, type: string }
 
 jobs:
   refactor:
-    # Only run on PR comments containing /refactor
-    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '/cs-agent')
+    # Accept either a dispatch from CodeScene or a /cs-agent PR comment
+    if: github.event_name == 'workflow_dispatch' || (github.event.issue.pull_request != null && contains(github.event.comment.body, '/cs-agent'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -20,8 +24,8 @@ jobs:
       - name: Run refactoring agent
         uses: codescene-oss/pr-refactoring-agent@v1.1.11
         with:
-          pr_number: ${{ github.event.issue.number }}
-          command: 'skill:fix-code-health-degradations'
+          pr_number: ${{ inputs.pr_number || github.event.issue.number }}
+          command: ${{ inputs.command || github.event.comment.body }}
           model: 'anthropic/claude-sonnet-4-6-20251101'
           codescene_token: ${{ secrets.CODESCENE_ACCESS_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
